@@ -1,0 +1,413 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String    @id @default(uuid()) @db.Uuid
+  name         String    @db.VarChar(255)
+  email        String    @unique @db.VarChar(255)
+  // Password dihapus karena dihandle Supabase Auth
+  phone_number String?   @db.VarChar(20)
+  access_token String?   @db.Text
+  created_at   DateTime  @default(now()) @db.Timestamptz
+  updated_at   DateTime  @default(now()) @updatedAt @db.Timestamptz
+
+  // Relations
+  profile               Profile[]
+  userRoles             UserRole[]
+  doctors               Doctor[]
+  drugPatients          DrugPatient[]
+  transactions          Transaction[]
+  notificationsSent     Notification[] @relation("SentNotifications")
+  notificationsReceived Notification[] @relation("ReceivedNotifications")
+
+  @@map("users")
+}
+
+model Role {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String   @unique @db.VarChar(50)
+  description String?  @db.Text
+  created_at  DateTime @default(now()) @db.Timestamptz
+  updated_at  DateTime @default(now()) @updatedAt @db.Timestamptz
+
+  userRoles UserRole[]
+
+  @@map("roles")
+}
+
+model UserRole {
+  id         String   @id @default(uuid()) @db.Uuid
+  user_id    String   @db.Uuid
+  role_id    String   @db.Uuid
+  created_at DateTime @default(now()) @db.Timestamptz
+  updated_at DateTime @default(now()) @updatedAt @db.Timestamptz
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  role Role @relation(fields: [role_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, role_id])
+  @@map("user_roles")
+}
+
+model Profile {
+  id                    String    @id @default(uuid()) @db.Uuid
+  user_id               String?   @db.Uuid
+  name                  String?   @db.VarChar(128)
+  place_of_birth        String?   @db.VarChar(64)
+  date_of_birth         DateTime? @db.Date
+  gender                Int?      @default(1) @db.SmallInt
+  card_number           String?   @db.VarChar(32)
+  address               String?   @db.VarChar(128)
+  rt                    Int?      @default(0) @db.SmallInt
+  rw                    Int?      @default(0) @db.SmallInt
+  city_id               String?   @db.VarChar(16)
+  postal_code           Int?
+  responsible_for_costs String?   @db.VarChar(64)
+  blood_group           String?   @db.VarChar(5)
+  created_at            DateTime  @default(now()) @db.Timestamptz
+  updated_at            DateTime  @default(now()) @updatedAt @db.Timestamptz
+
+  user User? @relation(fields: [user_id], references: [id])
+
+  @@map("profiles")
+}
+
+model Clinic {
+  id            String   @id @default(uuid()) @db.Uuid
+  name          String?  @db.VarChar(64)
+  address       String?  @db.VarChar(255)
+  accreditation String?  @db.VarChar(64)
+  contact_name  String?  @db.VarChar(64)
+  contact_phone String?  @db.VarChar(24)
+  contact_email String?  @db.VarChar(255)
+  created_at    DateTime @default(now()) @db.Timestamptz
+  updated_at    DateTime @default(now()) @updatedAt @db.Timestamptz
+
+  doctors      Doctor[]
+  appointments Appointment[]
+  polies       Poly[]
+  fees         Fee[]
+
+  @@map("clinics")
+}
+
+model Poly {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String?  @db.VarChar(128)
+  description String?  @db.Text
+  status      Int?     @default(1) @db.SmallInt
+  clinic_id   String?  @db.Uuid
+  created_at  DateTime @default(now()) @db.Timestamptz
+  updated_at  DateTime @default(now()) @updatedAt @db.Timestamptz
+
+  clinic        Clinic?        @relation(fields: [clinic_id], references: [id])
+  doctors       Doctor[]
+  appointments  Appointment[]
+  scheduleDates ScheduleDate[]
+  symptoms      Symptom[]
+
+  @@map("polies")
+}
+
+model Doctor {
+  id          String   @id @default(uuid()) @db.Uuid
+  user_id     String?  @db.Uuid
+  name        String?  @db.VarChar
+  degree      String?  @db.VarChar(64)
+  description String?  @db.Text
+  clinic_id   String?  @db.Uuid
+  poly_id     String?  @db.Uuid
+  status      Int?     @default(1) @db.SmallInt
+  specialize  String?  @db.VarChar(64)
+  created_at  DateTime @default(now()) @db.Timestamptz
+  updated_at  DateTime @default(now()) @updatedAt @db.Timestamptz
+
+  clinic        Clinic?        @relation(fields: [clinic_id], references: [id])
+  poly          Poly?          @relation(fields: [poly_id], references: [id])
+  user          User?          @relation(fields: [user_id], references: [id])
+  appointments  Appointment[]
+  scheduleDates ScheduleDate[]
+
+  @@map("doctors")
+}
+
+model ScheduleDate {
+  id            String    @id @default(uuid()) @db.Uuid
+  poly_id       String?   @db.Uuid
+  doctor_id     String?   @db.Uuid
+  schedule_date DateTime? @db.Date
+  created_at    DateTime  @default(now()) @db.Timestamptz
+  updated_at    DateTime  @default(now()) @updatedAt @db.Timestamptz
+
+  doctor        Doctor?        @relation(fields: [doctor_id], references: [id])
+  poly          Poly?          @relation(fields: [poly_id], references: [id])
+  appointments  Appointment[]
+  scheduleTimes ScheduleTime[]
+
+  @@map("schedule_dates")
+}
+
+model ScheduleTime {
+  id            String   @id @default(uuid()) @db.Uuid
+  date_id       String?  @db.Uuid
+  schedule_time String?  @db.VarChar(64)
+  limit         Int?
+  created_at    DateTime @default(now()) @db.Timestamptz
+  updated_at    DateTime @default(now()) @updatedAt @db.Timestamptz
+
+  date         ScheduleDate? @relation(fields: [date_id], references: [id])
+  appointments Appointment[]
+
+  @@map("schedule_times")
+}
+
+model Appointment {
+  id                  String   @id @default(uuid()) @db.Uuid
+  user_id             String?  @db.Uuid
+  clinic_id           String?  @db.Uuid
+  poly_id             String?  @db.Uuid
+  doctor_id           String?  @db.Uuid
+  date_id             String?  @db.Uuid
+  time_id             String?  @db.Uuid
+  status              Int?     @default(1) @db.SmallInt
+  rejected_note       String?  @db.VarChar(255)
+  qr_code             String?  @db.VarChar(255)
+  symptoms            String?  @db.Text
+  symptom_description String?  @db.Text
+  ai_response         String?  @db.Text
+  created_at          DateTime @default(now()) @db.Timestamptz
+  updated_at          DateTime @default(now()) @updatedAt @db.Timestamptz
+
+  clinic Clinic?       @relation(fields: [clinic_id], references: [id])
+  date   ScheduleDate? @relation(fields: [date_id], references: [id])
+  doctor Doctor?       @relation(fields: [doctor_id], references: [id])
+  poly   Poly?         @relation(fields: [poly_id], references: [id])
+  time   ScheduleTime? @relation(fields: [time_id], references: [id])
+
+  appointmentDrugs AppointmentDrug[]
+  appointmentFees  AppointmentFee[]
+  transactions     Transaction[]
+
+  @@map("appointments")
+}
+
+model Drug {
+  id           String   @id @default(uuid()) @db.Uuid
+  name         String?  @db.VarChar(128)
+  description  String?  @db.Text
+  company_name String?  @db.VarChar(255)
+  stock        Int?     @default(0)
+  buy_price    Decimal? @db.Decimal(15, 2) // Ganti BigInt ke Decimal
+  sell_price   Decimal? @db.Decimal(15, 2) // Ganti BigInt ke Decimal
+  dosis        String?  @db.VarChar(64)
+  kind         String?  @db.VarChar(64)
+  is_halal     Boolean?
+  created_at   DateTime @default(now()) @db.Timestamptz
+  updated_at   DateTime @default(now()) @updatedAt @db.Timestamptz
+
+  appointmentDrugs AppointmentDrug[]
+  drugPatients     DrugPatient[]
+
+  @@map("drugs")
+}
+
+model AppointmentDrug {
+  id             String    @id @default(uuid()) @db.Uuid
+  appointment_id String?   @db.Uuid
+  drug_id        String?   @db.Uuid
+  status         Boolean?
+  price          Decimal?  @db.Decimal(15, 2) // Ganti BigInt ke Decimal
+  grab_status    Int?      @default(1) @db.SmallInt
+  grab_date      DateTime? @db.Timestamp
+  created_at     DateTime  @default(now()) @db.Timestamptz
+  updated_at     DateTime  @default(now()) @updatedAt @db.Timestamptz
+
+  appointment Appointment? @relation(fields: [appointment_id], references: [id])
+  drug        Drug?        @relation(fields: [drug_id], references: [id])
+
+  @@map("appointment_drugs")
+}
+
+model Fee {
+  id         String    @id @default(uuid()) @db.Uuid
+  clinic_id  String?   @db.Uuid
+  procedure  String?   @db.VarChar
+  price      Decimal?  @db.Decimal(15, 2) // Ganti BigInt ke Decimal
+  status     Boolean?  @default(false)
+  created_at DateTime  @default(now()) @db.Timestamptz
+  updated_at DateTime? @updatedAt @db.Timestamp
+
+  appointmentFees AppointmentFee[]
+  clinic          Clinic?          @relation(fields: [clinic_id], references: [id])
+
+  @@map("fees")
+}
+
+model AppointmentFee {
+  id             String   @id @default(uuid()) @db.Uuid
+  appointment_id String?  @db.Uuid
+  fee_id         String?  @db.Uuid
+  status         Boolean?
+  price          Decimal? @db.Decimal(15, 2)
+  created_at     DateTime @default(now()) @db.Timestamptz
+  updated_at     DateTime @default(now()) @updatedAt @db.Timestamptz
+
+  appointment Appointment? @relation(fields: [appointment_id], references: [id])
+  fee         Fee?         @relation(fields: [fee_id], references: [id])
+
+  @@map("appointment_fees")
+}
+
+model Transaction {
+  id                 String    @id @db.Uuid
+  bank_id            String    @db.Uuid
+  appointment_id     String    @db.Uuid
+  user_id            String    @db.Uuid
+  transaction_number String    @db.VarChar(255)
+  total_price        Decimal   @db.Decimal(15, 2)
+  status             Int?
+  created_at         DateTime? @db.Timestamptz
+  updated_at         DateTime? @db.Timestamptz
+
+  appointment Appointment @relation(fields: [appointment_id], references: [id], map: "fk_appointment_id")
+  bank        Bank        @relation(fields: [bank_id], references: [id], map: "fk_bank_id")
+  user        User        @relation(fields: [user_id], references: [id], map: "fk_user_id")
+
+  @@map("transactions")
+}
+
+model Bank {
+  id             String    @id @db.Uuid
+  name           String    @db.VarChar(255)
+  account_number String?   @db.VarChar(255)
+  created_at     DateTime? @db.Timestamptz
+  updated_at     DateTime? @db.Timestamptz
+
+  transactions Transaction[]
+
+  @@map("banks")
+}
+
+model DrugPatient {
+  id           String   @id @default(uuid()) @db.Uuid
+  user_id      String?  @db.Uuid
+  drug_id      String?  @db.Uuid
+  description  String?  @db.VarChar(255)
+  consume_time String?  @db.VarChar
+  many_per_day Int?     @db.SmallInt
+  created_at   DateTime @default(now()) @db.Timestamptz
+  updated_at   DateTime @default(now()) @updatedAt @db.Timestamp
+
+  drug Drug? @relation(fields: [drug_id], references: [id])
+  user User? @relation(fields: [user_id], references: [id])
+
+  @@map("drug_patients")
+}
+
+model Notification {
+  id           String   @id @default(uuid()) @db.Uuid
+  type         Int?     @db.SmallInt
+  user_id_from String?  @db.Uuid
+  user_id_to   String?  @db.Uuid
+  page_link    String?  @default("") @db.VarChar
+  message      String?  @db.Text
+  status       Boolean? @default(false)
+  created_at   DateTime @default(now()) @db.Timestamptz
+  updated_at   DateTime @default(now()) @updatedAt @db.Timestamp
+
+  userFrom User? @relation("SentNotifications", fields: [user_id_from], references: [id])
+  userTo   User? @relation("ReceivedNotifications", fields: [user_id_to], references: [id])
+
+  @@map("notifications")
+}
+
+model Symptom {
+  id         String   @id @default(uuid()) @db.Uuid
+  poly_id    String?  @db.Uuid
+  en_name    String?  @db.VarChar(64)
+  id_name    String?  @db.VarChar(64)
+  created_at DateTime @default(now()) @db.Timestamptz
+  updated_at DateTime @default(now()) @updatedAt @db.Timestamp
+
+  poly Poly? @relation(fields: [poly_id], references: [id])
+
+  @@map("symptoms")
+}
+
+model About {
+  id         String   @id @default(uuid()) @db.Uuid
+  id_body    String?  @db.Text
+  en_body    String?  @db.Text
+  created_at DateTime @default(now()) @db.Timestamptz
+  updated_at DateTime @default(now()) @updatedAt @db.Timestamp
+
+  @@map("abouts")
+}
+
+model AiApi {
+  id               String   @id @default(uuid()) @db.Uuid
+  api_model        String?  @db.VarChar
+  api_key          String?  @db.VarChar
+  max_tokens_limit Int?     @default(900000)
+  status           Boolean?
+  created_at       DateTime @default(now()) @db.Timestamptz
+  updated_at       DateTime @default(now()) @updatedAt @db.Timestamp
+
+  @@map("ai_apis")
+}
+
+model City {
+  id           String  @id @default("16") @db.VarChar
+  province     String  @default("") @db.VarChar(128)
+  district     String? @default("") @db.VarChar(128)
+  sub_district String? @default("") @db.VarChar(128)
+  village      String? @default("") @db.VarChar(128)
+
+  @@map("cities")
+}
+
+model Faq {
+  id             String   @id @default(uuid()) @db.Uuid
+  en_title       String?  @db.VarChar(255)
+  en_description String?  @db.Text
+  id_title       String?  @db.VarChar(255)
+  id_description String?  @db.Text
+  created_at     DateTime @default(now()) @db.Timestamptz
+  updated_at     DateTime @default(now()) @updatedAt @db.Timestamp
+
+  @@map("faqs")
+}
+
+model File {
+  id           String   @id @default(uuid()) @db.Uuid
+  module_class String   @db.VarChar
+  module_id    String   @db.Uuid
+  file_name    String   @db.VarChar
+  file_type    String   @db.VarChar
+  created_at   DateTime @default(now()) @db.Timestamptz
+  updated_at   DateTime @default(now()) @updatedAt @db.Timestamp
+
+  @@map("files")
+}
+
+model HelpCenter {
+  id         String   @id @default(uuid()) @db.Uuid
+  en_summary String?  @db.Text
+  en_note    String?  @db.VarChar(255)
+  en_contact String?  @db.VarChar(255)
+  id_summary String?  @db.Text
+  id_note    String?  @db.VarChar(255)
+  id_contact String?  @db.VarChar(255)
+  created_at DateTime @default(now()) @db.Timestamptz
+  updated_at DateTime @default(now()) @updatedAt @db.Timestamp
+
+  @@map("help_centers")
+}
