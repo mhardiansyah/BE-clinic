@@ -3,7 +3,7 @@ import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { AppointmentService } from './appointment.service';
 
-@Controller('appointments')
+@Controller('appointment')
 @UseGuards(JwtAuthGuard) // Melindungi semua endpoint di controller ini
 export class AppointmentController {
   constructor(private readonly appointmentsService: AppointmentService) {}
@@ -15,8 +15,9 @@ export class AppointmentController {
   }
 
   @Get('my-history')
-  async findMyHistory(@Request() req) {
-    return this.appointmentsService.findMyAppointments(req.user.userId);
+  async getMyHistory(@Request() req) {
+    // req.user.userId didapat otomatis dari payload JWT saat login
+    return this.appointmentsService.findMyHistory(req.user.userId);
   }
 
   @Get(':id')

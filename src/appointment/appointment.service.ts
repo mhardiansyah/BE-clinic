@@ -22,22 +22,29 @@ export class AppointmentService {
     };
   }
 
-  async findMyAppointments(userId: string) {
-    const appointments = await this.prisma.appointment.findMany({
+  async findMyHistory(userId: string) {
+    // Mengambil data appointment dengan relasi lengkap
+    const history = await this.prisma.appointment.findMany({
       where: { user_id: userId },
       include: {
-        doctor: true,
-        poly: true,
-        clinic: true,
+        doctor: {
+          select: { name: true, degree: true, specialize: true }
+        },
+        poly: {
+          select: { name: true }
+        },
+        clinic: {
+          select: { name: true, address: true }
+        },
         date: true,
         time: true,
       },
-      orderBy: { created_at: 'desc' },
+      orderBy: { created_at: 'desc' }, // Terbaru di atas
     });
 
     return {
       message: "Riwayat janji temu berhasil diambil",
-      result: appointments,
+      result: history,
     };
   }
 
