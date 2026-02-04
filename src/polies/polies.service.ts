@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreatePolyDto } from './dto/create-poly.dto';
 import { UpdatePolyDto } from './dto/update-poly.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
@@ -10,28 +10,61 @@ export class PoliesService {
     return 'This action adds a new poly';
   }
 
-  async findAll() {
-    // Mengambil semua data poli
-    const polies = await this.prisma.poly.findMany({
-      where: { status: 1 }, // Hanya ambil yang aktif jika ada kolom status
-      orderBy: { name: 'asc' }
-    });
+  async findAll(query: { 
+    search?: string, 
+    page?: number, 
+    limit?: number, 
+    sortBy?: string, 
+    sortOrder?: 'asc' | 'desc' 
+  }) {
+    const { 
+      search, 
+      page = 1, 
+      limit = 10, 
+      sortBy = 'name', 
+      sortOrder = 'asc' 
+    } = query;
+
+    const skip = (page - 1) * limit;
+
+    const where = search 
+      ? { name: { contains: search, mode: 'insensitive' as const } } 
+      : {};
+
+    const [polies, total] = await Promise.all([
+      this.prisma.poly.findMany({
+        where,
+        take: Number(limit),
+        skip: Number(skip),
+        orderBy: { [sortBy]: sortOrder },
+      }),
+      this.prisma.poly.count({ where }),
+    ]);
 
     return {
-      message: "Data poli berhasil diambil",
-      result: polies
+      message: "Data poliklinik berhasil diambil",
+      result: {
+        data: polies,
+        meta: {
+          total,
+          page: Number(page),
+          last_page: Math.ceil(total / limit),
+          limit: Number(limit),
+        }
+      },
     };
   }
 
   async findOne(id: string) {
     const poly = await this.prisma.poly.findUnique({
       where: { id },
-      include: { doctors: true } // Contoh: Ambil juga daftar dokter di poli tersebut
     });
 
+    if (!poly) throw new NotFoundException('Poliklinik tidak ditemukan');
+
     return {
-      message: "Detail poli berhasil diambil",
-      result: poly
+      message: "Detail poliklinik berhasil diambil",
+      result: poly,
     };
   }
 

@@ -21,24 +21,59 @@ export class DrugsService {
     };
   }
 
-  async findAll(search?: string) {
-    const drugs = await this.prisma.drug.findMany({
-      where: {
-        ...(search && {
-          name: {
-            contains: search,
-            mode: 'insensitive',
-          },
-        }),
-      },
-      orderBy: { name: 'asc' },
-    });
+  async findAll(query: { 
+    search?: string, 
+    page?: number, 
+    limit?: number, 
+    sortBy?: string, 
+    sortOrder?: 'asc' | 'desc',
+    kind?: string // Contoh filter kategori
+  }) {
+    const { 
+      search, 
+      page = 1, 
+      limit = 10, 
+      sortBy = 'name', 
+      sortOrder = 'asc',
+      kind 
+    } = query;
+
+    // Menghitung offset untuk pagination
+    const skip = (page - 1) * limit;
+
+    // 1. Definisikan Filter
+    const where = {
+      AND: [
+        search ? { name: { contains: search, mode: 'insensitive' as const } } : {},
+        kind ? { kind: { equals: kind } } : {},
+      ]
+    };
+
+    // 2. Ambil data dan total count secara bersamaan
+    const [drugs, total] = await Promise.all([
+      this.prisma.drug.findMany({
+        where,
+        take: Number(limit),
+        skip: Number(skip),
+        orderBy: { [sortBy]: sortOrder },
+      }),
+      this.prisma.drug.count({ where }),
+    ]);
 
     return {
-      message: 'Data obat berhasil diambil',
-      result: drugs,
+      message: "Data obat berhasil diambil",
+      result: {
+        data: drugs,
+        meta: {
+          total,
+          page: Number(page),
+          last_page: Math.ceil(total / limit),
+          limit: Number(limit),
+        }
+      },
     };
   }
+
 
   async findOne(id: string) {
     const drug = await this.prisma.drug.findUnique({

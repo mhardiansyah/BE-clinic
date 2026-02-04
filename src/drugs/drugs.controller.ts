@@ -22,9 +22,16 @@ export class DrugsController {
   }
 
   @Get()
-  async findAll(@Query('search') search?: string) {
-    return this.drugsService.findAll(search);
-  }
+findAll(
+  @Query('search') search?: string,
+  @Query('page') page?: number,
+  @Query('limit') limit?: number,
+  @Query('sortBy') sortBy?: string,
+  @Query('sortOrder') sortOrder?: 'asc' | 'desc',
+  @Query('kind') kind?: string,
+) {
+  return this.drugsService.findAll({ search, page, limit, sortBy, sortOrder, kind });
+}
 
   @Get(':id')
   async findOne(@Param('id') id: string) {

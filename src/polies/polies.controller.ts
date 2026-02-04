@@ -6,6 +6,7 @@ import {
   Patch,
   Param,
   Delete,
+  Query,
 } from '@nestjs/common';
 import { PoliesService } from './polies.service';
 import { CreatePolyDto } from './dto/create-poly.dto';
@@ -21,12 +22,18 @@ export class PoliesController {
   }
 
   @Get()
-  async findAll() {
-    return this.poliesService.findAll();
+  findAll(
+    @Query('search') search?: string,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+    @Query('sortBy') sortBy?: string,
+    @Query('sortOrder') sortOrder?: 'asc' | 'desc',
+  ) {
+    return this.poliesService.findAll({ search, page, limit, sortBy, sortOrder });
   }
 
   @Get(':id')
-  async findOne(@Param('id') id: string) {
+  findOne(@Param('id') id: string) {
     return this.poliesService.findOne(id);
   }
 
