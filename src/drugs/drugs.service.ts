@@ -6,8 +6,19 @@ import { PrismaService } from 'src/prisma/prisma.service';
 @Injectable()
 export class DrugsService {
   constructor(private prisma: PrismaService) {}
-  create(createDrugDto: CreateDrugDto) {
-    return 'This action adds a new drug';
+
+  async create(createDrugDto: CreateDrugDto) {
+    const drug = await this.prisma.drug.create({
+      data: {
+        ...createDrugDto,
+        // Prisma otomatis menangani UUID jika di schema menggunakan @default(dbgenerated("gen_random_uuid()"))
+      },
+    });
+
+    return {
+      message: 'Obat baru berhasil ditambahkan',
+      result: drug,
+    };
   }
 
   async findAll(search?: string) {
@@ -16,7 +27,7 @@ export class DrugsService {
         ...(search && {
           name: {
             contains: search,
-            mode: 'insensitive', // Tidak peduli huruf besar/kecil
+            mode: 'insensitive',
           },
         }),
       },
@@ -24,7 +35,7 @@ export class DrugsService {
     });
 
     return {
-      message: "Data obat berhasil diambil",
+      message: 'Data obat berhasil diambil',
       result: drugs,
     };
   }
@@ -37,16 +48,31 @@ export class DrugsService {
     if (!drug) throw new NotFoundException('Obat tidak ditemukan');
 
     return {
-      message: "Detail obat berhasil diambil",
+      message: 'Detail obat berhasil diambil',
       result: drug,
     };
   }
 
-  update(id: number, updateDrugDto: UpdateDrugDto) {
-    return `This action updates a #${id} drug`;
+  // Update id menjadi string karena kita menggunakan UUID
+  async update(id: string, updateDrugDto: UpdateDrugDto) {
+    const drug = await this.prisma.drug.update({
+      where: { id },
+      data: updateDrugDto,
+    });
+
+    return {
+      message: 'Data obat berhasil diperbarui',
+      result: drug,
+    };
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} drug`;
+  async remove(id: string) {
+    await this.prisma.drug.delete({
+      where: { id },
+    });
+
+    return {
+      message: 'Obat berhasil dihapus',
+    };
   }
 }
