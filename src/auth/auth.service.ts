@@ -23,19 +23,20 @@ export class AuthService {
         );
       }
 
+      // 3. Cari atau buat user (Upsert)
       let user = await this.prisma.user.upsert({
         where: { email: email },
         update: { name: name || 'User' },
         create: {
           id: uid,
-          email: email, // Sekarang TS sudah yakin email adalah 'string'
+          email: email,
           name: name || 'User',
           password: 'firebase_authenticated',
           phone_number: '+62',
         },
       });
 
-      // 3. Pastikan User punya Role 'member' (ID dari screenshot lu)
+      // 4. Pastikan User punya Role 'member'
       const roleId = '0d809fc2-9fee-427e-a10c-04a177dec6b7';
       await this.prisma.userRole.upsert({
         where: { user_id_role_id: { user_id: user.id, role_id: roleId } },
@@ -43,14 +44,22 @@ export class AuthService {
         create: { user_id: user.id, role_id: roleId },
       });
 
-      // 4. Buat Payload JWT Backend lu sendiri
+      // 5. Buat Payload JWT Backend lu sendiri
       const payload = { sub: user.id, email: user.email, role: 'member' };
+      const accessToken = this.jwtService.sign(payload); // Generate Token
+
+      // --- TAMBAHAN: UPDATE ACCESS_TOKEN KE DATABASE SUPABASE ---
+      // Agar kolom access_token di Supabase tidak lagi "EMPTY" atau "NULL"
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: { access_token: accessToken },
+      });
 
       return {
         success: true,
         message: 'Login Berhasil Cuk!',
         data: {
-          access_token: this.jwtService.sign(payload), // JWT dari NestJS
+          access_token: accessToken, // Kirim ke Flutter
           user: {
             id: user.id,
             name: user.name,
@@ -60,6 +69,7 @@ export class AuthService {
         },
       };
     } catch (error) {
+      console.error('Auth Error:', error);
       throw new UnauthorizedException('Token Firebase Lu Gagal Diverifikasi!');
     }
   }
