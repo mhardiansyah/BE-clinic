@@ -2,7 +2,6 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreatePolyDto } from './dto/create-poly.dto';
 import { UpdatePolyDto } from './dto/update-poly.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
-
 @Injectable()
 export class PoliesService {
   constructor(private prisma: PrismaService) {}
