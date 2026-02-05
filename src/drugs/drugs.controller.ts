@@ -11,7 +11,8 @@ import {
 import { DrugsService } from './drugs.service';
 import { CreateDrugDto } from './dto/create-drug.dto';
 import { UpdateDrugDto } from './dto/update-drug.dto';
-
+import { AuthGuard } from '@nestjs/passport';
+@AuthGuard()
 @Controller('drugs')
 export class DrugsController {
   constructor(private readonly drugsService: DrugsService) {}
