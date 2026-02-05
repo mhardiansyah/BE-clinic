@@ -1,4 +1,11 @@
-import { PartialType } from '@nestjs/mapped-types';
-import { CreateAppointmentDto } from './create-appointment.dto';
+import { IsOptional, IsString } from 'class-validator';
 
-export class UpdateAppointmentDto extends PartialType(CreateAppointmentDto) {}
+export class UpdateAppointmentDto {
+  @IsOptional()
+  @IsString()
+  symptoms?: string;
+
+  @IsOptional()
+  @IsString()
+  symptom_description?: string;
+}

@@ -1,31 +1,27 @@
-// backend/src/appointment/dto/create-appointment.dto.ts
-import { IsString, IsNotEmpty, IsOptional } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString, IsUUID } from 'class-validator';
 
 export class CreateAppointmentDto {
   @IsNotEmpty()
-  @IsString()
-  user_id!: string; // Tambahkan ini untuk bypass token
+  @IsUUID()
+  clinic_id?: string;
 
   @IsNotEmpty()
-  @IsString()
-  clinic_id!: string;
+  @IsUUID()
+  poly_id?: string;
 
   @IsNotEmpty()
-  @IsString()
-  poly_id!: string;
+  @IsUUID()
+  doctor_id?: string;
 
   @IsNotEmpty()
-  @IsString()
-  doctor_id!: string;
+  @IsUUID()
+  date_id?: string;
 
   @IsNotEmpty()
-  @IsString()
-  date_id!: string;
+  @IsUUID()
+  time_id?: string;
 
-  @IsNotEmpty()
-  @IsString()
-  time_id!: string;
-
+  // Optional: Karena di langkah pertama, gejala mungkin belum diisi
   @IsOptional()
   @IsString()
   symptoms?: string;

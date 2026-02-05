@@ -1,22 +1,49 @@
-// backend/src/appointment/appointment.controller.ts
-import { Controller, Post, Get, Body, Param } from '@nestjs/common';
+import { 
+  Controller, 
+  Get, 
+  Post, 
+  Body, 
+  Patch, 
+  Param, 
+  UseGuards, 
+  Request 
+} from '@nestjs/common';
 import { AppointmentService } from './appointment.service';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
+import { UpdateAppointmentDto } from './dto/update-appointment.dto';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard'; // Pastikan path ini benar sesuai struktur foldermu
 
+@UseGuards(JwtAuthGuard) // <--- SEMUA ROUTE DI SINI AMAN (WAJIB LOGIN)
 @Controller('appointments')
-// @UseGuards(AuthGuard) // MATIKAN INI UNTUK LAPORAN BESOK
 export class AppointmentController {
   constructor(private readonly appointmentService: AppointmentService) {}
 
+  // 1. Buat Appointment Baru (Dipanggil saat klik 'Next' di Tab Schedule)
   @Post()
-  async create(@Body() dto: CreateAppointmentDto) {
-    // Ambil user_id langsung dari dto, bukan dari req.user
-    return this.appointmentService.create(dto.user_id, dto);
+  create(@Request() req, @Body() createAppointmentDto: CreateAppointmentDto) {
+    // req.user.userId otomatis ada karena JwtStrategy kita
+    return this.appointmentService.create(req.user.userId, createAppointmentDto);
   }
 
-  // Gunakan Query Parameter atau Path Parameter untuk ambil riwayat tanpa token
-  @Get('user/:userId')
-  async getMyHistory(@Param('userId') userId: string) {
-    return this.appointmentService.getMyAppointments(userId);
+  // 2. Update Gejala (Dipanggil saat klik 'Next' di Tab Symptom)
+  @Patch(':id')
+  update(
+    @Request() req, 
+    @Param('id') id: string, 
+    @Body() updateAppointmentDto: UpdateAppointmentDto
+  ) {
+    return this.appointmentService.updateSymptoms(req.user.userId, id, updateAppointmentDto);
+  }
+
+  // 3. Ambil Semua Appointment User (Untuk Halaman History/Medical Records)
+  @Get()
+  findAll(@Request() req) {
+    return this.appointmentService.getMyAppointments(req.user.userId);
+  }
+
+  // 4. Ambil Detail Satu Appointment
+  @Get(':id')
+  findOne(@Request() req, @Param('id') id: string) {
+    return this.appointmentService.getOne(req.user.userId, id);
   }
 }
