@@ -2,29 +2,31 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { TransformInterceptor } from './common/interceptors/response.interceptor';
 import * as admin from 'firebase-admin';
-import * as path from 'path'; // Jangan lupa import ini
+import * as path from 'path';
 
 async function bootstrap() {
-  // 1. Ambil path absolut ke file JSON lu
+  // Gunakan process.cwd() untuk menunjuk ke folder root proyek (backend/)
   const serviceAccountPath = path.join(process.cwd(), 'serviceAccountKey.json');
 
-  // 2. Inisialisasi Firebase Admin dengan File Cert
   if (!admin.apps.length) {
-    admin.initializeApp({
-      credential: admin.credential.cert(serviceAccountPath),
-    });
-    console.log('✅ Firebase Admin initialized using serviceAccountKey.json');
+    try {
+      admin.initializeApp({
+        // Gunakan cert() dengan path yang sudah kita rakit
+        credential: admin.credential.cert(serviceAccountPath),
+      });
+      console.log('✅ Firebase Admin Berhasil Inisialisasi dari Folder Root!');
+    } catch (error) {
+      console.error('❌ Gagal membaca file JSON Cuk! Cek lagi lokasinya.');
+      console.error(error);
+      process.exit(1); // Hentikan aplikasi jika Firebase gagal
+    }
   }
 
   const app = await NestFactory.create(AppModule);
-  
-  // 3. Aktifkan CORS biar Flutter lu bisa nembak API
   app.enableCors(); 
-
   app.useGlobalInterceptors(new TransformInterceptor());
   
-  // 4. Pastikan port ini sama dengan yang dipanggil di Flutter (4000)
   await app.listen(4000);
-  console.log('🚀 Server is running on: http://localhost:4000');
+  console.log('🚀 Server running on: http://localhost:4000');
 }
 bootstrap();
