@@ -5,7 +5,7 @@ import { MastersService } from './master.service';
 import { PrismaModule } from 'prisma/prisma.module';
 
 @Module({
-  imports: [PrismaModule], // Penting! Biar bisa akses Database
+  imports: [PrismaModule], 
   controllers: [MastersController],
   providers: [MastersService],
 })
