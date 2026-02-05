@@ -4,27 +4,27 @@ import { IsString, IsNotEmpty, IsOptional } from 'class-validator';
 export class CreateAppointmentDto {
   @IsNotEmpty()
   @IsString()
-  user_id: string; // Tambahkan ini untuk bypass token
+  user_id!: string; // Tambahkan ini untuk bypass token
 
   @IsNotEmpty()
   @IsString()
-  clinic_id: string;
+  clinic_id!: string;
 
   @IsNotEmpty()
   @IsString()
-  poly_id: string;
+  poly_id!: string;
 
   @IsNotEmpty()
   @IsString()
-  doctor_id: string;
+  doctor_id!: string;
 
   @IsNotEmpty()
   @IsString()
-  date_id: string;
+  date_id!: string;
 
   @IsNotEmpty()
   @IsString()
-  time_id: string;
+  time_id!: string;
 
   @IsOptional()
   @IsString()

@@ -2,7 +2,7 @@ import { IsString, IsOptional, IsInt, IsBoolean, IsNumber } from 'class-validato
 
 export class CreateDrugDto {
   @IsString()
-  name: string;
+  name!: string; // Tambahkan ! di sini
 
   @IsOptional()
   @IsString()
@@ -13,13 +13,13 @@ export class CreateDrugDto {
   company_name?: string;
 
   @IsInt()
-  stock: number;
+  stock!: number; // Tambahkan ! di sini
 
   @IsNumber()
-  buy_price: number;
+  buy_price!: number; // Tambahkan ! di sini
 
   @IsNumber()
-  sell_price: number;
+  sell_price!: number; // Tambahkan ! di sini
 
   @IsOptional()
   @IsString()
@@ -30,5 +30,5 @@ export class CreateDrugDto {
   kind?: string;
 
   @IsBoolean()
-  is_halal: boolean;
+  is_halal!: boolean; // Tambahkan ! di sini
 }
