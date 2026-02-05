@@ -5,8 +5,8 @@ import { AuthService } from './auth.service';
 export class AuthController {
     constructor(private readonly authService: AuthService) { }
 
-    @Post('google-login')
-    async googleLogin(@Body() body: { email: string; name: string; photoUrl?: string }) {
-        return this.authService.googleLogin(body);
-    }
+    // @Post('google-login')
+    // async googleLogin(@Body() body: { email: string; name: string; photoUrl?: string }) {
+    //     return this.authService.googleLogin(body);
+    // }
 }

@@ -10,7 +10,8 @@ datasource db {
 }
 
 model User {
-  id           String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  // ID diubah dari UUID ke String agar cocok dengan Firebase UID
+  id           String        @id @db.VarChar(255)
   name         String        @db.VarChar(255)
   email        String        @unique @db.VarChar(255)
   password     String        @db.VarChar(255)
@@ -39,7 +40,7 @@ model Role {
 
 model UserRole {
   id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  user_id    String?   @db.Uuid
+  user_id    String?   @db.VarChar(255) // Harus String agar relasi ke User lancar
   role_id    String?   @db.Uuid
   created_at DateTime? @default(now()) @db.Timestamptz(6)
   updated_at DateTime? @default(now()) @updatedAt @db.Timestamptz(6)
@@ -52,7 +53,7 @@ model UserRole {
 
 model Profile {
   id                    String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  user_id               String?   @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id               String?   @db.VarChar(255) // Diubah ke String
   name                  String?   @default("128") @db.VarChar
   place_of_birth        String?   @default("64") @db.VarChar
   date_of_birth         DateTime? @db.Date
@@ -116,7 +117,7 @@ model Doctor {
   created_at    DateTime       @default(now()) @db.Timestamptz(6)
   updated_at    DateTime?      @default(now()) @updatedAt @db.Timestamp(6)
   specialize    String?        @default("64") @db.VarChar
-  user_id       String?        @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id       String?        @db.VarChar(255) // Diubah ke String
   name          String?        @db.VarChar
   appointments  Appointment[]
   clinic        Clinic?        @relation(fields: [clinic_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
@@ -155,28 +156,28 @@ model ScheduleTime {
 }
 
 model Appointment {
-  id                  String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  user_id             String?           @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  clinic_id           String?           @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  poly_id             String?           @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  doctor_id           String?           @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  date_id             String?           @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  time_id             String?           @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  status              Int?              @default(1) @db.SmallInt
-  rejected_note       String?           @default("255") @db.VarChar
-  created_at          DateTime          @default(now()) @db.Timestamptz(6)
-  updated_at          DateTime?         @default(now()) @updatedAt @db.Timestamp(6)
-  qr_code             String?           @default("8") @db.VarChar
+  id                  String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id             String?          @db.VarChar(255) // Diubah ke String
+  clinic_id           String?          @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  poly_id             String?          @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  doctor_id           String?          @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  date_id             String?          @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  time_id             String?          @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  status              Int?             @default(1) @db.SmallInt
+  rejected_note       String?          @default("255") @db.VarChar
+  created_at          DateTime         @default(now()) @db.Timestamptz(6)
+  updated_at          DateTime?        @default(now()) @updatedAt @db.Timestamp(6)
+  qr_code             String?          @default("8") @db.VarChar
   symptoms            String?
   symptom_description String?
   ai_response         String?
   appointmentDrugs    AppointmentDrug[]
   appointmentFees     AppointmentFee[]
-  clinic              Clinic?           @relation(fields: [clinic_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  date                ScheduleDate?     @relation(fields: [date_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  doctor              Doctor?           @relation(fields: [doctor_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  poly                Poly?             @relation(fields: [poly_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  time                ScheduleTime?     @relation(fields: [time_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  clinic              Clinic?          @relation(fields: [clinic_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  date                ScheduleDate?    @relation(fields: [date_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  doctor              Doctor?          @relation(fields: [doctor_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  poly                Poly?            @relation(fields: [poly_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  time                ScheduleTime?    @relation(fields: [time_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   transactions        Transaction[]
 
   @@map("appointments")
@@ -187,9 +188,9 @@ model Drug {
   name             String?           @default("128") @db.VarChar
   description      String?
   company_name     String?           @default("255") @db.VarChar
-  stock         Int?              @default(0) // Stock biasanya cukup pakai Int
-  buy_price     Decimal?          @db.Decimal(15, 2)
-  sell_price    Decimal?
+  stock            Int?              @default(0)
+  buy_price        Decimal?          @db.Decimal(15, 2)
+  sell_price       Decimal?
   dosis            String?           @default("16") @db.VarChar
   kind             String?           @default("32") @db.VarChar
   is_halal         Boolean?
@@ -208,7 +209,7 @@ model AppointmentDrug {
   status         Boolean?
   created_at     DateTime     @default(now()) @db.Timestamptz(6)
   updated_at     DateTime?    @default(now()) @updatedAt @db.Timestamp(6)
-  price           Decimal?
+  price          Decimal?
   grab_status    Int?         @default(1) @db.SmallInt
   grab_date      DateTime?    @db.Timestamp(6)
   appointment    Appointment? @relation(fields: [appointment_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
@@ -248,7 +249,7 @@ model Transaction {
   id                 String      @id @db.Uuid
   bank_id            String      @db.Uuid
   appointment_id     String      @db.Uuid
-  user_id            String      @db.Uuid
+  user_id            String      @db.VarChar(255) // Diubah ke String
   transaction_number String      @db.VarChar(255)
   total_price        Decimal     @db.Decimal(15, 2)
   created_at         DateTime?   @db.Timestamptz(6)
@@ -274,7 +275,7 @@ model Bank {
 
 model DrugPatient {
   id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  user_id      String?   @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id      String?   @db.VarChar(255) // Diubah ke String
   drug_id      String?   @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   created_at   DateTime  @default(now()) @db.Timestamptz(6)
   updated_at   DateTime? @default(now()) @updatedAt @db.Timestamp(6)
@@ -290,8 +291,8 @@ model DrugPatient {
 model Notification {
   id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   type         Int?      @db.SmallInt
-  user_id_from String?   @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  user_id_to   String?   @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id_from String?   @db.VarChar(255) // Sebaiknya String jika ini user ID
+  user_id_to   String?   @db.VarChar(255) // Sebaiknya String jika ini user ID
   page_link    String?   @default("") @db.VarChar
   message      String?
   status       Boolean?  @default(false)
@@ -327,24 +328,12 @@ model AiApi {
   id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   api_model        String?   @db.VarChar
   api_key          String?   @db.VarChar
-  max_tokens_limit Int?   @default(900000)
+  max_tokens_limit Int?      @default(900000)
   created_at       DateTime  @default(now()) @db.Timestamptz(6)
   updated_at       DateTime? @default(now()) @updatedAt @db.Timestamp(6)
   status           Boolean?
 
   @@map("ai_apis")
-}
-
-/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
-model City {
-  id           String  @default("16") @db.VarChar
-  province     String  @default("128") @db.VarChar
-  district     String? @default("128") @db.VarChar
-  sub_district String? @default("128") @db.VarChar
-  village      String? @default("128") @db.VarChar
-
-  @@map("cities")
-  @@ignore
 }
 
 model Faq {

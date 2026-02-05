@@ -11,14 +11,11 @@ export class DrugsService {
     const drug = await this.prisma.drug.create({
       data: {
         ...createDrugDto,
-        // Prisma otomatis menangani UUID jika di schema menggunakan @default(dbgenerated("gen_random_uuid()"))
       },
     });
 
-    return {
-      message: 'Obat baru berhasil ditambahkan',
-      result: drug,
-    };
+    // Langsung kembalikan objeknya, biarkan Interceptor yang membungkus message
+    return drug; 
   }
 
   async findAll(query: { 
@@ -27,7 +24,7 @@ export class DrugsService {
     limit?: number, 
     sortBy?: string, 
     sortOrder?: 'asc' | 'desc',
-    kind?: string // Contoh filter kategori
+    kind?: string 
   }) {
     const { 
       search, 
@@ -38,10 +35,8 @@ export class DrugsService {
       kind 
     } = query;
 
-    // Menghitung offset untuk pagination
     const skip = (page - 1) * limit;
 
-    // 1. Definisikan Filter
     const where = {
       AND: [
         search ? { name: { contains: search, mode: 'insensitive' as const } } : {},
@@ -49,7 +44,6 @@ export class DrugsService {
       ]
     };
 
-    // 2. Ambil data dan total count secara bersamaan
     const [drugs, total] = await Promise.all([
       this.prisma.drug.findMany({
         where,
@@ -59,21 +53,8 @@ export class DrugsService {
       }),
       this.prisma.drug.count({ where }),
     ]);
-
-    return {
-      message: "Data obat berhasil diambil",
-      result: {
-        data: drugs,
-        meta: {
-          total,
-          page: Number(page),
-          last_page: Math.ceil(total / limit),
-          limit: Number(limit),
-        }
-      },
-    };
+    return drugs;
   }
-
 
   async findOne(id: string) {
     const drug = await this.prisma.drug.findUnique({
@@ -81,33 +62,20 @@ export class DrugsService {
     });
 
     if (!drug) throw new NotFoundException('Obat tidak ditemukan');
-
-    return {
-      message: 'Detail obat berhasil diambil',
-      result: drug,
-    };
+    return drug;
   }
 
-  // Update id menjadi string karena kita menggunakan UUID
   async update(id: string, updateDrugDto: UpdateDrugDto) {
-    const drug = await this.prisma.drug.update({
+    return this.prisma.drug.update({
       where: { id },
       data: updateDrugDto,
     });
-
-    return {
-      message: 'Data obat berhasil diperbarui',
-      result: drug,
-    };
   }
 
   async remove(id: string) {
     await this.prisma.drug.delete({
       where: { id },
     });
-
-    return {
-      message: 'Obat berhasil dihapus',
-    };
+    return { id };
   }
 }

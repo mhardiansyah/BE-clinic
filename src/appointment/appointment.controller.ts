@@ -1,32 +1,22 @@
-import { Controller, Get, Post, Body, UseGuards, Request, Param, Query } from '@nestjs/common';
-import { CreateAppointmentDto } from './dto/create-appointment.dto';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+// backend/src/appointment/appointment.controller.ts
+import { Controller, Post, Get, Body, Param } from '@nestjs/common';
 import { AppointmentService } from './appointment.service';
+import { CreateAppointmentDto } from './dto/create-appointment.dto';
 
-@Controller('appointment')
-// @UseGuards(JwtAuthGuard) // Melindungi semua endpoint di controller ini
+@Controller('appointments')
+// @UseGuards(AuthGuard) // MATIKAN INI UNTUK LAPORAN BESOK
 export class AppointmentController {
   constructor(private readonly appointmentService: AppointmentService) {}
 
   @Post()
-  async create(@Request() req, @Body() dto: CreateAppointmentDto) {
-    // req.user.userId didapat dari JwtStrategy yang kita buat sebelumnya
-    return this.appointmentService.create(req.user.userId, dto);
+  async create(@Body() dto: CreateAppointmentDto) {
+    // Ambil user_id langsung dari dto, bukan dari req.user
+    return this.appointmentService.create(dto.user_id, dto);
   }
 
-  @Get('my-history')
-  // async getMyHistory(@Request() req) {
-  //   // req.user.userId didapat otomatis dari payload JWT saat login
-  //   return this.appointmentsService.findMyHistory(req.user.userId);
-  // }
-  async getMyHistory(@Query('userId') userId: string) {
-    // Sekarang userId dikirim via URL, misal: /appointments/my-history?userId=xxx
-    return this.appointmentService.findMyHistory(userId);
-  }
-
-  @Get(':id')
-  async findOne(@Param('id') id: string) {
-    return this.appointmentService.findOne(id);
+  // Gunakan Query Parameter atau Path Parameter untuk ambil riwayat tanpa token
+  @Get('user/:userId')
+  async getMyHistory(@Param('userId') userId: string) {
+    return this.appointmentService.getMyAppointments(userId);
   }
 }
-

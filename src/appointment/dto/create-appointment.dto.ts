@@ -1,19 +1,29 @@
-import { IsUUID, IsString, IsOptional } from 'class-validator';
+// backend/src/appointment/dto/create-appointment.dto.ts
+import { IsString, IsNotEmpty, IsOptional } from 'class-validator';
 
 export class CreateAppointmentDto {
-  @IsUUID()
+  @IsNotEmpty()
+  @IsString()
+  user_id: string; // Tambahkan ini untuk bypass token
+
+  @IsNotEmpty()
+  @IsString()
   clinic_id: string;
 
-  @IsUUID()
+  @IsNotEmpty()
+  @IsString()
   poly_id: string;
 
-  @IsUUID()
+  @IsNotEmpty()
+  @IsString()
   doctor_id: string;
 
-  @IsUUID()
+  @IsNotEmpty()
+  @IsString()
   date_id: string;
 
-  @IsUUID()
+  @IsNotEmpty()
+  @IsString()
   time_id: string;
 
   @IsOptional()
