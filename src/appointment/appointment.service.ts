@@ -98,18 +98,20 @@ export class AppointmentService {
         clinic: true,
         poly: true,
         doctor: true,
-        schedule_date: true,
-        schedule_time: true,
-        // Pastikan tabel files berelasi dengan appointments
+        date: true, // Ganti dari schedule_date ke date
+        time: true, // Ganti dari schedule_time ke time
+        // Jika relasi files belum ada di schema.prisma model Appointment, 
+        // bagian ini mending di-comment dulu biar build-nya lewat.
+        /*
         files: {
           where: { module_class: 'appointments' }
         }
+        */
       },
     });
 
     if (!summary) throw new NotFoundException('Appointment not found');
     
-    // Ambil detail gejala secara manual jika disimpan sebagai string ID dipisah koma
     let symptomDetails: any[] = [];
     if (summary.symptoms) {
       const symptomIds = summary.symptoms.split(',');
