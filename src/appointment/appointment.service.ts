@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { UpdateAppointmentDto } from './dto/update-appointment.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
@@ -37,14 +41,17 @@ export class AppointmentService {
   }
 
   // --- STEP 3: UPDATE SYMPTOMS (SYMPTOM TAB) ---
-  async updateSymptoms(id: string, data: { symptoms: string, symptom_description: string }) {
+  async updateSymptoms(
+    id: string,
+    data: { symptoms: string; symptom_description: string },
+  ) {
     return this.prisma.appointment.update({
       where: { id: id },
       data: {
         symptoms: data.symptoms,
         symptom_description: data.symptom_description,
         // Status 1 biasanya berarti 'Scheduled/Confirmed' setelah gejala diisi
-        status: 1, 
+        status: 1,
       },
     });
   }
@@ -67,9 +74,9 @@ export class AppointmentService {
   // --- GET SINGLE APPOINTMENT DETAIL ---
   async getOne(userId: string, appointmentId: string) {
     const appointment = await this.prisma.appointment.findFirst({
-      where: { 
+      where: {
         id: appointmentId,
-        user_id: userId // Pastikan cuma bisa liat punya sendiri
+        user_id: userId, // Pastikan cuma bisa liat punya sendiri
       },
       include: {
         clinic: true,
@@ -84,5 +91,33 @@ export class AppointmentService {
     return appointment;
   }
 
-  
+  async getSummary(id: string) {
+    const summary = await this.prisma.appointment.findUnique({
+      where: { id },
+      include: {
+        clinic: true,
+        poly: true,
+        doctor: true,
+        schedule_date: true,
+        schedule_time: true,
+        // Pastikan tabel files berelasi dengan appointments
+        files: {
+          where: { module_class: 'appointments' }
+        }
+      },
+    });
+
+    if (!summary) throw new NotFoundException('Appointment not found');
+    
+    // Ambil detail gejala secara manual jika disimpan sebagai string ID dipisah koma
+    let symptomDetails: any[] = [];
+    if (summary.symptoms) {
+      const symptomIds = summary.symptoms.split(',');
+      symptomDetails = await this.prisma.symptom.findMany({
+        where: { id: { in: symptomIds } }
+      });
+    }
+
+    return { ...summary, symptomDetails };
+  }
 }

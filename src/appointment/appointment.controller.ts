@@ -46,5 +46,10 @@ export class AppointmentController {
     return this.appointmentService.getOne(req.user.userId, id);
   }
 
+  @Get(':id/summary')
+  getSummary(@Param('id') id: string) {
+    return this.appointmentService.getSummary(id);
+  }
+
   
 }
