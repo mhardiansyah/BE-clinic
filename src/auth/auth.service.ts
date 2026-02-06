@@ -1,7 +1,12 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as admin from 'firebase-admin';
 import { PrismaService } from 'src/prisma/prisma.service';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class AuthService {
@@ -17,7 +22,9 @@ export class AuthService {
       const { uid, email, name, picture } = decodedToken;
 
       if (!email) {
-        throw new UnauthorizedException('Email dari Firebase tidak ditemukan Cuk!');
+        throw new UnauthorizedException(
+          'Email dari Firebase tidak ditemukan Cuk!',
+        );
       }
 
       // 2. Sync User ke Database
@@ -70,4 +77,55 @@ export class AuthService {
       throw new UnauthorizedException('Token Firebase Lu Gagal Diverifikasi!');
     }
   }
+
+  async loginWithEmail(dto: any) {
+  // 1. Cari user berdasarkan email dengan include
+  const user = await this.prisma.user.findUnique({
+    where: { email: dto.email },
+    include: { 
+      userRoles: { 
+        include: { 
+          role: true 
+        } 
+      } 
+    }
+  });
+
+  if (!user) {
+    throw new NotFoundException('Email tidak terdaftar, Cuk!');
+  }
+
+  // 2. Cek Password (Bcrypt)
+  const isPasswordValid = await bcrypt.compare(dto.password, user.password);
+  if (!isPasswordValid) {
+    throw new UnauthorizedException('Password lu salah, Cuk!');
+  }
+
+  // 3. Ambil Role Nama dengan pengecekan array
+  // Kita cast ke 'any' di bagian userRoles saja biar property-nya kebaca
+  const userWithRoles = user as any;
+  const roleName = userWithRoles.userRoles?.[0]?.role?.name || 'member';
+
+  // 4. Generate JWT Backend
+  const payload = { sub: user.id, email: user.email, role: roleName };
+  const accessToken = this.jwtService.sign(payload);
+
+  // 5. Update access_token di DB
+  await this.prisma.user.update({
+    where: { id: user.id },
+    data: { access_token: accessToken },
+  });
+
+  return {
+    message: 'Login Berhasil!',
+    result: {
+      access_token: accessToken,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+      },
+    },
+  };
+}
 }
