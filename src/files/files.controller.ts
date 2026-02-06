@@ -1,35 +1,41 @@
-// src/files/files.service.ts
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
+import { Controller, Post, Body, Get, Query, Delete, UseGuards } from '@nestjs/common';
+import { FilesService } from './files.service';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
-@Injectable()
-export class FilesService {
-  constructor(private prisma: PrismaService) {}
+@Controller('files')
+export class FilesController {
+  constructor(private readonly filesService: FilesService) {}
 
-  // Simpan info file ke tabel 'files'
-  async saveFileInfo(data: {
-    module_class: string;
-    module_id: string;
-    file_name: string; // Ini akan berisi URL Cloudinary
-    file_type: string;
-  }) {
-    return this.prisma.file.create({
-      data: {
-        module_class: data.module_class,
-        module_id: data.module_id,
-        file_name: data.file_name,
-        file_type: data.file_type,
-      },
-    });
+  // Endpoint: POST https://be-clinic-rx7y.vercel.app/files/save
+  @UseGuards(JwtAuthGuard)
+  @Post('save')
+  async saveFile(
+    @Body() body: {
+      moduleClass: string;
+      moduleId: string;
+      fileName: string;
+      fileType: string;
+    },
+  ) {
+    return this.filesService.saveFileInfo(body);
   }
 
-  // Hapus info file berdasarkan ID modul (untuk fungsi cancel/delete)
-  async deleteByModule(moduleClass: string, moduleId: string) {
-    return this.prisma.file.deleteMany({
-      where: {
-        module_class: moduleClass,
-        module_id: moduleId,
-      },
-    });
+  // Endpoint: GET https://be-clinic-rx7y.vercel.app/files/find
+  @Get('find')
+  async getFile(
+    @Query('moduleClass') moduleClass: string,
+    @Query('moduleId') moduleId: string,
+  ) {
+    return this.filesService.findByModule(moduleClass, moduleId);
+  }
+
+  // Endpoint: DELETE https://be-clinic-rx7y.vercel.app/files/cancel
+  @UseGuards(JwtAuthGuard)
+  @Delete('cancel')
+  async cancelFile(
+    @Query('moduleClass') moduleClass: string,
+    @Query('moduleId') moduleId: string,
+  ) {
+    return this.filesService.deleteFile(moduleClass, moduleId);
   }
 }
