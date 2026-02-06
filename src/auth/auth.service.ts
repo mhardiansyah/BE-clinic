@@ -22,10 +22,13 @@ export class AuthService {
       const { uid, email, name, picture } = decodedToken;
 
       if (!email) {
-        throw new UnauthorizedException(
-          'Email dari Firebase tidak ditemukan Cuk!',
-        );
+        throw new UnauthorizedException('Email dari Firebase tidak ditemukan Cuk!');
       }
+
+      // --- TAMBAHKAN HASHING DI SINI ---
+      // Kita buat password dummy yang di-hash agar konsisten dengan login manual
+      const dummyPassword = 'firebase_authenticated_secure_random';
+      const hashedDummyPassword = await bcrypt.hash(dummyPassword, 10);
 
       // 2. Sync User ke Database
       let user = await this.prisma.user.upsert({
@@ -35,7 +38,7 @@ export class AuthService {
           id: uid,
           email: email,
           name: name || 'User',
-          password: 'firebase_authenticated',
+          password: hashedDummyPassword, // Simpan hasil hash, bukan teks biasa!
           phone_number: '+62',
         },
       });
@@ -52,16 +55,14 @@ export class AuthService {
       const payload = { sub: user.id, email: user.email, role: 'member' };
       const accessToken = this.jwtService.sign(payload);
 
-      // 5. Update access_token di Supabase agar tidak EMPTY
+      // 5. Update access_token di Supabase
       await this.prisma.user.update({
         where: { id: user.id },
         data: { access_token: accessToken },
       });
 
-      // --- CUKUP RETURN DATA INI SAJA ---
-      // Interceptor lu bakal ngebungkus ini jadi: { success: true, message: "Login Berhasil...", data: { access_token, user } }
       return {
-        message: 'Login Berhasil Cuk!', // Ini bakal dibaca data?.message di Interceptor
+        message: 'Login Berhasil Cuk!',
         result: {
           access_token: accessToken,
           user: {
@@ -78,54 +79,36 @@ export class AuthService {
     }
   }
 
+  // Fungsi loginWithEmail tetap sama karena sekarang database sudah konsisten menggunakan hash
   async loginWithEmail(dto: any) {
-  // 1. Cari user berdasarkan email dengan include
-  const user = await this.prisma.user.findUnique({
-    where: { email: dto.email },
-    include: { 
-      userRoles: { 
-        include: { 
-          role: true 
-        } 
-      } 
-    }
-  });
+    const user = await this.prisma.user.findUnique({
+      where: { email: dto.email },
+      include: { userRoles: { include: { role: true } } }
+    });
 
-  if (!user) {
-    throw new NotFoundException('Email tidak terdaftar, Cuk!');
-  }
+    if (!user) throw new NotFoundException('Email tidak terdaftar, Cuk!');
 
-  // 2. Cek Password (Bcrypt)
-  const isPasswordValid = await bcrypt.compare(dto.password, user.password);
-  if (!isPasswordValid) {
-    throw new UnauthorizedException('Password lu salah, Cuk!');
-  }
+    // Sekarang ini bakal sukses karena user.password isinya sudah pasti hash
+    const isPasswordValid = await bcrypt.compare(dto.password, user.password);
+    if (!isPasswordValid) throw new UnauthorizedException('Password lu salah, Cuk!');
 
-  // 3. Ambil Role Nama dengan pengecekan array
-  // Kita cast ke 'any' di bagian userRoles saja biar property-nya kebaca
-  const userWithRoles = user as any;
-  const roleName = userWithRoles.userRoles?.[0]?.role?.name || 'member';
+    const userWithRoles = user as any;
+    const roleName = userWithRoles.userRoles?.[0]?.role?.name || 'member';
 
-  // 4. Generate JWT Backend
-  const payload = { sub: user.id, email: user.email, role: roleName };
-  const accessToken = this.jwtService.sign(payload);
+    const payload = { sub: user.id, email: user.email, role: roleName };
+    const accessToken = this.jwtService.sign(payload);
 
-  // 5. Update access_token di DB
-  await this.prisma.user.update({
-    where: { id: user.id },
-    data: { access_token: accessToken },
-  });
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { access_token: accessToken },
+    });
 
-  return {
-    message: 'Login Berhasil!',
-    result: {
-      access_token: accessToken,
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
+    return {
+      message: 'Login Berhasil!',
+      result: {
+        access_token: accessToken,
+        user: { id: user.id, name: user.name, email: user.email },
       },
-    },
-  };
-}
+    };
+  }
 }
