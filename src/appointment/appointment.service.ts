@@ -37,34 +37,14 @@ export class AppointmentService {
   }
 
   // --- STEP 3: UPDATE SYMPTOMS (SYMPTOM TAB) ---
-  async updateSymptoms(userId: string, appointmentId: string, dto: UpdateAppointmentDto) {
-    // 1. Cek apakah appointment ada?
-    const appointment = await this.prisma.appointment.findUnique({
-      where: { id: appointmentId },
-    });
-
-    if (!appointment) {
-      throw new NotFoundException('Appointment tidak ditemukan Cuk!');
-    }
-
-    // 2. Security Check: Apakah appointment ini milik user yang sedang login?
-    if (appointment.user_id !== userId) {
-      throw new ForbiddenException('Woi, dilarang ngedit appointment orang lain!');
-    }
-
-    // 3. Lakukan Update
+  async updateSymptoms(id: string, data: { symptoms: string, symptom_description: string }) {
     return this.prisma.appointment.update({
-      where: { id: appointmentId },
+      where: { id: id },
       data: {
-        symptoms: dto.symptoms,
-        symptom_description: dto.symptom_description,
-      },
-      include: {
-        clinic: true,
-        doctor: true,
-        poly: true,
-        date: true,
-        time: true,
+        symptoms: data.symptoms,
+        symptom_description: data.symptom_description,
+        // Status 1 biasanya berarti 'Scheduled/Confirmed' setelah gejala diisi
+        status: 1, 
       },
     });
   }
@@ -103,4 +83,6 @@ export class AppointmentService {
     if (!appointment) throw new NotFoundException('Data tidak ditemukan');
     return appointment;
   }
+
+  
 }

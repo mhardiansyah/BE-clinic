@@ -26,13 +26,12 @@ export class AppointmentController {
   }
 
   // 2. Update Gejala (Dipanggil saat klik 'Next' di Tab Symptom)
-  @Patch(':id')
-  update(
-    @Request() req, 
-    @Param('id') id: string, 
-    @Body() updateAppointmentDto: UpdateAppointmentDto
+  @Patch(':id/symptoms')
+  updateSymptoms(
+    @Param('id') id: string,
+    @Body() body: { symptoms: string, symptom_description: string },
   ) {
-    return this.appointmentService.updateSymptoms(req.user.userId, id, updateAppointmentDto);
+    return this.appointmentService.updateSymptoms(id, body);
   }
 
   // 3. Ambil Semua Appointment User (Untuk Halaman History/Medical Records)
@@ -46,4 +45,6 @@ export class AppointmentController {
   findOne(@Request() req, @Param('id') id: string) {
     return this.appointmentService.getOne(req.user.userId, id);
   }
+
+  
 }

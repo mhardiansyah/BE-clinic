@@ -37,4 +37,9 @@ export class MastersController {
   getScheduleTimes(@Param('dateId') dateId: string) {
     return this.mastersService.getScheduleTimes(dateId);
   }
+
+  @Get('symptoms/:polyId')
+  getSymptoms(@Param('polyId') polyId: string) {
+    return this.mastersService.getSymptoms(polyId);
+  }
 }

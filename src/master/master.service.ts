@@ -59,4 +59,11 @@ export class MastersService {
       orderBy: { schedule_time: 'asc' },
     });
   }
+
+  async getSymptoms(polyId: string) {
+  return this.prisma.symptom.findMany({
+    where: { poly_id: polyId },
+    orderBy: { en_name: 'asc' }, // Urutkan berdasarkan nama Inggris
+  });
+}
 }
